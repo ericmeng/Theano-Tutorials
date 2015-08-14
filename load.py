@@ -1,3 +1,4 @@
+import cPickle
 import numpy as np
 import os
 
@@ -48,3 +49,15 @@ def mnist(ntrain=60000, ntest=10000, onehot=True):
         teY = np.asarray(teY)
 
     return trX, teX, trY, teY
+
+def save_model(name, params):
+    f = file(name, 'wb')
+    cPickle.dump(params, f, protocol=cPickle.HIGHEST_PROTOCOL)
+    f.close()
+
+
+def load_model(name):
+    f = file(name, 'rb')
+    _params = cPickle.load(f)
+    f.close()
+    return _params

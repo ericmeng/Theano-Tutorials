@@ -2,9 +2,12 @@ import theano
 from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 import numpy as np
-from load import mnist
 from theano.tensor.nnet.conv import conv2d
 from theano.tensor.signal.downsample import max_pool_2d
+
+from load import mnist, save_model
+
+theano.config.floatX = 'float32'
 
 srng = RandomStreams()
 
@@ -15,6 +18,10 @@ def floatX(X):
 
 def init_weights(shape):
     return theano.shared(floatX(np.random.randn(*shape) * 0.01))
+
+
+def init_inputs(shape):
+    return theano.shared(floatX(np.random.randn(*shape) * 0.01 + 0.5))
 
 
 def rectify(X):
@@ -47,7 +54,8 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     return updates
 
 
-def model(X, w, w2, w3, w4, p_drop_conv, p_drop_hidden):
+def model(X, params, p_drop_conv, p_drop_hidden):
+    w, w2, w3, w4, w_o = params
     l1a = rectify(conv2d(X, w, border_mode='full'))
     l1 = max_pool_2d(l1a, (2, 2))
     l1 = dropout(l1, p_drop_conv)
@@ -68,32 +76,40 @@ def model(X, w, w2, w3, w4, p_drop_conv, p_drop_hidden):
     return l1, l2, l3, l4, pyx
 
 
-trX, teX, trY, teY = mnist(onehot=True)
+def main_rain():
+    trX, teX, trY, teY = mnist(onehot=True)
 
-trX = trX.reshape(-1, 1, 28, 28)
-teX = teX.reshape(-1, 1, 28, 28)
+    trX = trX.reshape(-1, 1, 28, 28)
+    teX = teX.reshape(-1, 1, 28, 28)
+    X = T.ftensor4()
+    Y = T.fmatrix()
 
-X = T.ftensor4()
-Y = T.fmatrix()
+    w = init_weights((32, 1, 3, 3))
+    w2 = init_weights((64, 32, 3, 3))
+    w3 = init_weights((128, 64, 3, 3))
+    w4 = init_weights((128 * 3 * 3, 625))
+    w_o = init_weights((625, 10))
+    params = [w, w2, w3, w4, w_o]
 
-w = init_weights((32, 1, 3, 3))
-w2 = init_weights((64, 32, 3, 3))
-w3 = init_weights((128, 64, 3, 3))
-w4 = init_weights((128 * 3 * 3, 625))
-w_o = init_weights((625, 10))
+    noise_l1, noise_l2, noise_l3, noise_l4, noise_py_x = model(X, params, 0.2, 0.5)
+    l1, l2, l3, l4, py_x = model(X, params, 0., 0.)
+    y_x = T.argmax(py_x, axis=1)
 
-noise_l1, noise_l2, noise_l3, noise_l4, noise_py_x = model(X, w, w2, w3, w4, 0.2, 0.5)
-l1, l2, l3, l4, py_x = model(X, w, w2, w3, w4, 0., 0.)
-y_x = T.argmax(py_x, axis=1)
+    cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 
-cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
-params = [w, w2, w3, w4, w_o]
-updates = RMSprop(cost, params, lr=0.001)
+    updates = RMSprop(cost, params, lr=0.001)
 
-train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
+    train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+    predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
+    for i in range(100):
+        for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
+            cost = train(trX[start:end], trY[start:end])
+        print np.mean(np.argmax(teY, axis=1) == predict(teX))
+        if i % 10 == 0:
+            name = 'media/model/conv-{0}.model'.format(str(i))
+            save_model(name, params)
+    name = 'media/model/conv-final.model'
+    save_model(name, params)
 
-for i in range(100):
-    for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
-        cost = train(trX[start:end], trY[start:end])
-    print np.mean(np.argmax(teY, axis=1) == predict(teX))
+
+main_rain()
