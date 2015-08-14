@@ -6,18 +6,23 @@ from load import mnist
 
 srng = RandomStreams()
 
+
 def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
+
 
 def init_weights(shape):
     return theano.shared(floatX(np.random.randn(*shape) * 0.01))
 
+
 def rectify(X):
     return T.maximum(X, 0.)
+
 
 def softmax(X):
     e_x = T.exp(X - X.max(axis=1).dimshuffle(0, 'x'))
     return e_x / e_x.sum(axis=1).dimshuffle(0, 'x')
+
 
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
@@ -31,12 +36,14 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((p, p - lr * g))
     return updates
 
+
 def dropout(X, p=0.):
     if p > 0:
         retain_prob = 1 - p
         X *= srng.binomial(X.shape, p=retain_prob, dtype=theano.config.floatX)
         X /= retain_prob
     return X
+
 
 def model(X, w_h, w_h2, w_o, p_drop_input, p_drop_hidden):
     X = dropout(X, p_drop_input)
@@ -48,6 +55,7 @@ def model(X, w_h, w_h2, w_o, p_drop_input, p_drop_hidden):
     h2 = dropout(h2, p_drop_hidden)
     py_x = softmax(T.dot(h2, w_o))
     return h, h2, py_x
+
 
 trX, teX, trY, teY = mnist(onehot=True)
 
@@ -73,4 +81,3 @@ for i in range(100):
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
         cost = train(trX[start:end], trY[start:end])
     print np.mean(np.argmax(teY, axis=1) == predict(teX))
-

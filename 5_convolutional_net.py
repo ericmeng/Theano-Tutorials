@@ -8,18 +8,23 @@ from theano.tensor.signal.downsample import max_pool_2d
 
 srng = RandomStreams()
 
+
 def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
+
 
 def init_weights(shape):
     return theano.shared(floatX(np.random.randn(*shape) * 0.01))
 
+
 def rectify(X):
     return T.maximum(X, 0.)
+
 
 def softmax(X):
     e_x = T.exp(X - X.max(axis=1).dimshuffle(0, 'x'))
     return e_x / e_x.sum(axis=1).dimshuffle(0, 'x')
+
 
 def dropout(X, p=0.):
     if p > 0:
@@ -27,6 +32,7 @@ def dropout(X, p=0.):
         X *= srng.binomial(X.shape, p=retain_prob, dtype=theano.config.floatX)
         X /= retain_prob
     return X
+
 
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
@@ -39,6 +45,7 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((acc, acc_new))
         updates.append((p, p - lr * g))
     return updates
+
 
 def model(X, w, w2, w3, w4, p_drop_conv, p_drop_hidden):
     l1a = rectify(conv2d(X, w, border_mode='full'))
@@ -60,6 +67,7 @@ def model(X, w, w2, w3, w4, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l4, w_o))
     return l1, l2, l3, l4, pyx
 
+
 trX, teX, trY, teY = mnist(onehot=True)
 
 trX = trX.reshape(-1, 1, 28, 28)
@@ -77,7 +85,6 @@ w_o = init_weights((625, 10))
 noise_l1, noise_l2, noise_l3, noise_l4, noise_py_x = model(X, w, w2, w3, w4, 0.2, 0.5)
 l1, l2, l3, l4, py_x = model(X, w, w2, w3, w4, 0., 0.)
 y_x = T.argmax(py_x, axis=1)
-
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 params = [w, w2, w3, w4, w_o]
