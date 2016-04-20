@@ -1,27 +1,29 @@
 #!/bin/bash
 
-mkdir -p /media/datasets/mnist
+datasets_dir='datasets/'
 
-if ! [ -e /media/datasets/mnist/train-images-idx3-ubyte.gz ]
-	then
-		wget -P /media/datasets/mnist/ http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
-fi
-gzip -d /media/datasets/mnist/train-images-idx3-ubyte.gz
+mkdir -p $datasets_dir/mnist
 
-if ! [ -e /media/datasets/mnist/train-labels-idx1-ubyte.gz ]
+if ! [ -e $datasets_dir/mnist/train-images-idx3-ubyte.gz ]
 	then
-		wget -P /media/datasets/mnist/ http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+		wget -P $datasets_dir/mnist/ http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
 fi
-gzip -d /media/datasets/mnist/train-labels-idx1-ubyte.gz
+gzip -d $datasets_dir/mnist/train-images-idx3-ubyte.gz
 
-if ! [ -e /media/datasets/mnist/t10k-images-idx3-ubyte.gz ]
+if ! [ -e $datasets_dir/mnist/train-labels-idx1-ubyte.gz ]
 	then
-		wget -P /media/datasets/mnist/ http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+		wget -P $datasets_dir/mnist/ http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
 fi
-gzip -d /media/datasets/mnist/t10k-images-idx3-ubyte.gz
+gzip -d $datasets_dir/mnist/train-labels-idx1-ubyte.gz
 
-if ! [ -e /media/datasets/mnist/t10k-labels-idx1-ubyte.gz ]
+if ! [ -e $datasets_dir/mnist/t10k-images-idx3-ubyte.gz ]
 	then
-		wget -P /media/datasets/mnist/ http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+		wget -P $datasets_dir/mnist/ http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
 fi
-gzip -d /media/datasets/mnist/t10k-labels-idx1-ubyte.gz
+gzip -d $datasets_dir/mnist/t10k-images-idx3-ubyte.gz
+
+if ! [ -e $datasets_dir/mnist/t10k-labels-idx1-ubyte.gz ]
+	then
+		wget -P $datasets_dir/mnist/ http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+fi
+gzip -d $datasets_dir/mnist/t10k-labels-idx1-ubyte.gz
